@@ -1,0 +1,38 @@
+{
+  "admin": {
+    "password": "12345",
+    "role": "admin",
+    "coins": 0,
+    "clickPower": 1
+  },
+  "helper": {
+    "password": "helper123",
+    "role": "helper",
+    "coins": 0,
+    "clickPower": 1
+  },
+  "player1": {
+    "password": "qwerty",
+    "role": "player",
+    "coins": 0,
+    "clickPower": 1
+  },
+  "player2": {
+    "password": "password",
+    "role": "player",
+    "coins": 0,
+    "clickPower": 1
+  },
+  "dima": {
+    "password": "dima2025",
+    "role": "player",
+    "coins": 0,
+    "clickPower": 1
+  },
+  "vasya": {
+    "password": "vasya228",
+    "role": "player",
+    "coins": 0,
+    "clickPower": 1
+  }
+}

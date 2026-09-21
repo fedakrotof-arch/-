@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>👆 Кликер</title>
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    color: #eee;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    user-select: none;
+    overflow-x: hidden;
+  }
+
+  .login-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 340px;
+    width: 100%;
+    margin: auto;
+  }
+  .login-screen h1 { font-size: 30px; color: #cddc39; margin-bottom: 8px; }
+  .login-screen .sub { color: #888; font-size: 13px; margin-bottom: 28px; }
+
+  .login-form {
+    width: 100%;
+    background: rgba(0,0,0,0.3);
+    border: 2px solid #2a3a5c;
+    border-radius: 16px;
+    padding: 22px;
+  }
+  .login-form label {
+    display: block;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .login-form input {
+    width: 100%;
+    background: #16213e;
+    border: 2px solid #2a3a5c;
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: #fff;
+    font-size: 15px;
+    margin-bottom: 14px;
+    outline: none;
+  }
+  .login-form input:focus { border-color: #4caf50; }
+
+  .login-btn {
+    width: 100%;
+    background: #4caf50;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .login-btn:active { transform: scale(0.97); }
+  .login-btn:disabled { background: #555; cursor: wait; }
+
+  .login-error {
+    color: #e74c3c;
+    font-size: 13px;
+    text-align: center;
+    margin-top: 12px;
+    min-height: 18px;
+    font-weight: bold;
+  }
+
+  .game-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 500px;
+    margin: auto;
+  }
+  .game-screen.active { display: flex; }
+  .login-screen.hidden { display: none; }
+
+  .user-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #888;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .user-name { color: #8bc34a; font-weight: bold; }
+
+  .role-badge {
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    color: #fff;
+  }
+  .role-badge.admin  { background: #e74c3c; }
+  .role-badge.helper { background: #ff9800; }
+
+  .logout-btn {
+    background: transparent;
+    border: 1px solid #444;
+    color: #888;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    cursor: pointer;
+  }
+
+  h1.game-title { font-size: 26px; margin-bottom: 14px; color: #cddc39; }
+
+  .score-box {
+    background: rgba(0,0,0,0.3);
+    border: 2px solid #4caf50;
+    border-radius: 16px;
+    padding: 16px 40px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .score {
+    font-size: 52px;
+    font-weight: bold;
+    color: #8bc34a;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .score-label {
+    font-size: 12px;
+    color: #888;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  .power-box {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid #2a3a5c;
+    border-radius: 10px;
+    padding: 8px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #8bc34a;
+  }
+  .power-box .num { font-weight: bold; color: #cddc39; }
+
+  .click-area {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffd54f, #f9a825 60%, #e65100);
+    border: 6px solid #ffb300;
+    box-shadow: 0 8px 24px rgba(255, 193, 7, 0.4),
+                inset 0 -6px 12px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 100px;
+    cursor: pointer;
+    margin: 0 auto;
+    transition: transform 0.08s;
+  }
+  .click-area:active { transform: scale(0.92); }
+
+  .float-text {
+    position: fixed;
+    color: #ffeb3b;
+    font-weight: bold;
+    font-size: 24px;
+    pointer-events: none;
+    animation: floatUp 0.8s ease-out forwards;
+    z-index: 200;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  }
+  @keyframes floatUp {
+    0%   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -80px) scale(1.4); }
+  }
+
+  .hint { margin-top: 18px; color: #666; font-size: 13px; text-align: center; }
+
+  .top-block {
+    display: none;
+    width: 100%;
+    margin-top: 24px;
+    background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,152,0,0.05));
+    border: 2px solid #ffb300;
+    border-radius: 14px;
+    padding: 18px 16px;
+    text-align: center;
+  }
+  .top-block.visible { display: block; }
+  .top-crown { font-size: 42px; display: block; margin-bottom: 6px; }
+  .top-title {
+    font-size: 11px;
+    color: #ffb300;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
+  .top-login {
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 12px;
+    word-break: break-all;
+  }
+  .top-stats { display: flex; gap: 22px; justify-content: center; }
+  .top-stat .val {
+    font-weight: bold;
+    color: #cddc39;
+    font-size: 20px;
+    display: block;
+  }
+  .top-stat .lbl {
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .panel {
+    display: none;
+    width: 100%;
+    margin-top: 24px;
+    background: rgba(0,0,0,0.35);
+    border-radius: 16px;
+    padding: 16px;
+  }
+  .panel.visible { display: block; }
+  .panel.admin  { border: 2px solid #e74c3c; }
+  .panel.helper { border: 2px solid #ff9800; }
+
+  .panel-title {
+    font-size: 15px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .panel.admin .panel-title  { color: #e74c3c; }
+  .panel.helper .panel-title { color: #ff9800; }
+
+  .panel-sub {
+    font-size: 11px;
+    color: #888;
+    text-align: center;
+    margin-bottom: 14px;
+  }
+
+  .player-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .player-row {
+    background: #16213e;
+    border: 1px solid #2a3a5c;
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .player-row.me { border-color: #4caf50; background: rgba(76,175,80,0.1); }
+
+  .player-row-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .player-login { color: #fff; font-weight: bold; font-size: 14px; }
+  .player-login .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4caf50;
+    margin-right: 8px;
+  }
+  .player-stats {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+    color: #aaa;
+  }
+  .player-stats .val { color: #8bc34a; font-weight: bold; }
+
+  .player-edit {
+    display: none;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #2a3a5c;
+  }
+  .player-row.editable .player-edit { display: flex; }
+
+  .player-edit input {
+    flex: 1;
+    background: #0f1a2e;
+    border: 1px solid #2a3a5c;
+    border-radius: 6px;
+    padding: 6px 8px;
+    color: #fff;
+    font-size: 12px;
+    outline: none;
+    width: 100%;
+    min-width: 0;
+  }
+  .player-edit input:focus { border-color: #4caf50; }
+
+  .edit-group { flex: 1; min-width: 0; }
+  .edit-group label {
+    display: block;
+    font-size: 10px;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 3px;
+  }
+
+  .edit-btn {
+    background: #4caf50;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    align-self: flex-end;
+  }
+  .edit-btn:active { transform: scale(0.95); }
+
+  .panel-refresh {
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .panel.admin .panel-refresh  { background: #e74c3c; }
+  .panel.helper .panel-refresh { background: #ff9800; }
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <h1>👆 Кликер</h1>
+  <p class="sub">Вход по логину и паролю</p>
+  <div class="login-form">
+    <label for="loginUser">Логин</label>
+    <input type="text" id="loginUser" autocomplete="off" placeholder="Введите логин">
+    <label for="loginPass">Пароль</label>
+    <input type="password" id="loginPass" autocomplete="off" placeholder="Введите пароль">
+    <button class="login-btn" id="loginBtn">Войти</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div class="game-screen" id="gameScreen">
+  <div class="user-bar">
+    <span>Вы вошли как <span class="user-name" id="currentUser"></span></span>
+    <span id="roleBadge" class="role-badge" style="display:none;"></span>
+    <button class="logout-btn" id="logoutBtn">Выйти</button>
+  </div>
+
+  <h1 class="game-title">👆 Кликер</h1>
+
+  <div class="score-box">
+    <div class="score" id="score">0</div>
+    <div class="score-label">Монет</div>
+  </div>
+
+  <div class="power-box">
+    Сила клика: <span class="num" id="powerDisplay">1</span>
+  </div>
+
+  <div class="click-area" id="clickArea">💰</div>
+
+  <div class="hint">Тапай монетку — каждое нажатие даёт силу клика</div>
+
+  <div class="top-block" id="topBlock">
+    <span class="top-crown">👑</span>
+    <div class="top-title">Лучший игрок</div>
+    <div class="top-login" id="topLogin">—</div>
+    <div class="top-stats">
+      <div class="top-stat">
+        <span class="val" id="topScore">0</span>
+        <div class="lbl">Монет</div>
+      </div>
+      <div class="top-stat">
+        <span class="val" id="topPower">1</span>
+        <div class="lbl">Сила клика</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel admin" id="adminPanel">
+    <div class="panel-title">👑 Панель админа</div>
+    <div class="panel-sub">Весь список. Можешь менять монеты и силу клика</div>
+    <div class="player-list" id="adminList"></div>
+    <button class="panel-refresh" id="adminRefresh">🔄 Обновить</button>
+  </div>
+
+  <div class="panel helper" id="helperPanel">
+    <div class="panel-title">🛡 Панель хелпера</div>
+    <div class="panel-sub">Весь список. Только просмотр</div>
+    <div class="player-list" id="helperList"></div>
+    <button class="panel-refresh" id="helperRefresh">🔄 Обновить</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  var currentUser = null;
+  var role = 'player';
+  var coins = 0;
+  var clickPower = 1;
+  var clickQueue = 0; // сколько кликов ждёт отправки
+  var sending = false;
+
+  var loginScreen  = document.getElementById('loginScreen');
+  var gameScreen   = document.getElementById('gameScreen');
+  var loginUser    = document.getElementById('loginUser');
+  var loginPass    = document.getElementById('loginPass');
+  var loginBtn     = document.getElementById('loginBtn');
+  var loginError   = document.getElementById('loginError');
+  var currentUserEl= document.getElementById('currentUser');
+  var roleBadge    = document.getElementById('roleBadge');
+  var scoreEl      = document.getElementById('score');
+  var powerDisplay = document.getElementById('powerDisplay');
+  var clickArea    = document.getElementById('clickArea');
+  var topBlock     = document.getElementById('topBlock');
+  var topLogin     = document.getElementById('topLogin');
+  var topScore     = document.getElementById('topScore');
+  var topPower     = document.getElementById('topPower');
+  var adminPanel   = document.getElementById('adminPanel');
+  var adminList    = document.getElementById('adminList');
+  var helperPanel  = document.getElementById('helperPanel');
+  var helperList   = document.getElementById('helperList');
+
+  // ═══════════════════════════════════════════════════════
+  // ФОРМАТ ЧИСЛА
+  // ═══════════════════════════════════════════════════════
+  function formatNumber(n) {
+    if (n < 1000) return '' + n;
+    if (n < 1e6)  return (n / 1e3).toFixed(n < 1e4 ? 1 : 0) + 'K';
+    if (n < 1e9)  return (n / 1e6).toFixed(n < 1e7 ? 1 : 0) + 'M';
+    if (n < 1e12) return (n / 1e9).toFixed(n < 1e10 ? 1 : 0) + 'B';
+    return (n / 1e12).toFixed(2) + 'T';
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // ОБРАЩЕНИЕ К СЕРВЕРУ
+  // ═══════════════════════════════════════════════════════
+  function api(method, url, body) {
+    var opts = {
+      method: method,
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin'
+    };
+    if (body) opts.body = JSON.stringify(body);
+    return fetch(url, opts).then(function(r) {
+      return r.json().then(function(data) {
+        return { ok: r.ok, status: r.status, data: data };
+      });
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // ВХОД
+  // ═══════════════════════════════════════════════════════
+  function tryLogin() {
+    var user = loginUser.value.trim();
+    var pass = loginPass.value;
+
+    if (!user || !pass) {
+      loginError.textContent = 'Заполните оба поля';
+      return;
+    }
+
+    loginBtn.disabled = true;
+    loginError.textContent = '';
+
+    api('POST', '/api/login', { login: user, password: pass })
+      .then(function(res) {
+        loginBtn.disabled = false;
+        if (!res.ok) {
+          loginError.textContent = res.data.error || 'Ошибка входа';
+          loginPass.value = '';
+          return;
+        }
+        currentUser = res.data.login;
+        role = res.data.role;
+        coins = res.data.coins;
+        clickPower = res.data.clickPower;
+        enterGame();
+      })
+      .catch(function() {
+        loginBtn.disabled = false;
+        loginError.textContent = 'Нет связи с сервером';
+      });
+  }
+
+  function enterGame() {
+    loginScreen.classList.add('hidden');
+    gameScreen.classList.add('active');
+    currentUserEl.textContent = currentUser;
+    updateScoreUI();
+
+    roleBadge.style.display = 'none';
+    roleBadge.className = 'role-badge';
+    if (role === 'admin') {
+      roleBadge.textContent = 'ADMIN';
+      roleBadge.classList.add('admin');
+      roleBadge.style.display = 'inline-block';
+      adminPanel.classList.add('visible');
+      helperPanel.classList.remove('visible');
+      topBlock.classList.remove('visible');
+      loadAdminPanel();
+    } else if (role === 'helper') {
+      roleBadge.textContent = 'HELPER';
+      roleBadge.classList.add('helper');
+      roleBadge.style.display = 'inline-block';
+      helperPanel.classList.add('visible');
+      adminPanel.classList.remove('visible');
+      topBlock.classList.remove('visible');
+      loadHelperPanel();
+    } else {
+      adminPanel.classList.remove('visible');
+      helperPanel.classList.remove('visible');
+      topBlock.classList.add('visible');
+      loadTop();
+    }
+
+    loginUser.value = '';
+    loginPass.value = '';
+  }
+
+  function logout() {
+    api('POST', '/api/logout').then(function() {
+      currentUser = null;
+      role = 'player';
+      coins = 0;
+      clickPower = 1;
+      gameScreen.classList.remove('active');
+      loginScreen.classList.remove('hidden');
+      loginError.textContent = '';
+    });
+  }
+
+  function updateScoreUI() {
+    scoreEl.textContent = formatNumber(coins);
+    powerDisplay.textContent = formatNumber(clickPower);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // КЛИК — сразу показываем, отправляем пакетом
+  // ═══════════════════════════════════════════════════════
+  function doClick(e) {
+    if (!currentUser) return;
+
+    coins += clickPower;
+    updateScoreUI();
+    clickQueue++;
+
+    var x, y;
+    if (e.touches && e.touches[0]) { x = e.touches[0].clientX; y = e.touches[0].clientY; }
+    else if (e.changedTouches && e.changedTouches[0]) { x = e.changedTouches[0].clientX; y = e.changedTouches[0].clientY; }
+    else {
+      var rect = clickArea.getBoundingClientRect();
+      x = rect.left + rect.width / 2; y = rect.top + rect.height / 2;
+    }
+
+    var txt = document.createElement('div');
+    txt.className = 'float-text';
+    txt.textContent = '+' + clickPower;
+    txt.style.left = x + 'px';
+    txt.style.top = y + 'px';
+    document.body.appendChild(txt);
+    setTimeout(function() { txt.remove(); }, 800);
+
+    sendClicksSoon();
+  }
+
+  // Отправляем клики пачкой раз в 500 мс
+  var sendTimer = null;
+  function sendClicksSoon() {
+    if (sendTimer) return;
+    sendTimer = setTimeout(flushClicks, 500);
+  }
+
+  function flushClicks() {
+    sendTimer = null;
+    if (sending || clickQueue === 0) return;
+    sending = true;
+    var count = clickQueue;
+    clickQueue = 0;
+
+    // Отправляем клики по одному запросу — но кликов может быть много,
+    // поэтому отправляем N запросов параллельно (упрощённо — по 1 за раз)
+    var chain = Promise.resolve();
+    for (var i = 0; i < count; i++) {
+      chain = chain.then(function() {
+        return api('POST', '/api/click');
+      });
+    }
+    chain.then(function() {
+      sending = false;
+      // Синхронизируем с сервером
+      return api('GET', '/api/me');
+    }).then(function(res) {
+      if (res && res.ok && res.data) {
+        coins = res.data.coins;
+        clickPower = res.data.clickPower;
+        updateScoreUI();
+      }
+      if (clickQueue > 0) sendClicksSoon();
+    }).catch(function() {
+      sending = false;
+    });
