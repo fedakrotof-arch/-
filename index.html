@@ -164,6 +164,7 @@
   .player-edit {
     display: none; gap: 8px; margin-top: 10px;
     padding-top: 10px; border-top: 1px solid #2a3a5c;
+    flex-wrap: wrap;
   }
   .player-row.editable .player-edit { display: flex; }
   .player-edit input {
@@ -172,7 +173,7 @@
     font-size: 12px; outline: none; width: 100%; min-width: 0;
   }
   .player-edit input:focus { border-color: #4caf50; }
-  .edit-group { flex: 1; min-width: 0; }
+  .edit-group { flex: 1; min-width: 80px; }
   .edit-group label {
     display: block; font-size: 10px; color: #666;
     text-transform: uppercase; margin-bottom: 3px;
@@ -181,6 +182,7 @@
     background: #4caf50; color: #fff; border: none;
     border-radius: 6px; padding: 6px 10px; font-size: 11px;
     font-weight: bold; cursor: pointer; align-self: flex-end;
+    min-height: 32px;
   }
   .edit-btn:active { transform: scale(0.95); }
   .panel-refresh {
@@ -213,15 +215,20 @@
     <span id="roleBadge" class="role-badge" style="display:none;"></span>
     <button class="logout-btn" id="logoutBtn">Выйти</button>
   </div>
+
   <h1 class="game-title">👆 Кликер</h1>
+
   <div class="score-box">
     <div class="score" id="score">0</div>
     <div class="score-label">Монет</div>
   </div>
+
   <div class="power-box">
     Сила клика: <span class="num" id="powerDisplay">1</span>
   </div>
+
   <div class="click-area" id="clickArea">💰</div>
+
   <div class="hint">Тапай монетку — каждое нажатие даёт силу клика</div>
 
   <div class="top-block" id="topBlock">
@@ -242,19 +249,18 @@
 
   <div class="panel admin" id="adminPanel">
     <div class="panel-title">👑 Панель админа</div>
-    <div class="panel-sub">Весь список. Можешь менять монеты и силу клика</div>
+    <div class="panel-sub">Меняй монеты, силу клика и пароли</div>
     <div class="player-list" id="adminList"></div>
     <button class="panel-refresh" id="adminRefresh">🔄 Обновить</button>
   </div>
 
   <div class="panel helper" id="helperPanel">
     <div class="panel-title">🛡 Панель хелпера</div>
-    <div class="panel-sub">Весь список. Только просмотр</div>
+    <div class="panel-sub">Только просмотр</div>
     <div class="player-list" id="helperList"></div>
     <button class="panel-refresh" id="helperRefresh">🔄 Обновить</button>
   </div>
 </div>
-
 <script>
 (function() {
   'use strict';
@@ -478,6 +484,7 @@
       var edit = document.createElement('div');
       edit.className = 'player-edit';
 
+      // Монеты
       var g1 = document.createElement('div');
       g1.className = 'edit-group';
       g1.innerHTML = '<label>Монеты</label>';
@@ -485,6 +492,7 @@
       inS.type = 'number'; inS.min = '0'; inS.value = p.coins;
       g1.appendChild(inS);
 
+      // Сила клика
       var g2 = document.createElement('div');
       g2.className = 'edit-group';
       g2.innerHTML = '<label>Сила</label>';
@@ -492,26 +500,53 @@
       inP.type = 'number'; inP.min = '1'; inP.value = p.clickPower;
       g2.appendChild(inP);
 
+      // НОВОЕ: Пароль
+      var g3 = document.createElement('div');
+      g3.className = 'edit-group';
+      g3.innerHTML = '<label>Пароль</label>';
+      var inPass = document.createElement('input');
+      inPass.type = 'text';
+      inPass.placeholder = 'новый пароль';
+      inPass.value = '';
+      g3.appendChild(inPass);
+
+      // Кнопка OK
       var btn = document.createElement('button');
       btn.className = 'edit-btn';
       btn.textContent = 'OK';
       btn.addEventListener('click', function() {
         var ns = parseInt(inS.value, 10);
         var np = parseInt(inP.value, 10);
+        var newPass = inPass.value.trim();
+
         if (isNaN(ns) || ns < 0) ns = 0;
         if (isNaN(np) || np < 1) np = 1;
 
+        // 1. Сохраняем монеты и силу
         api('POST', '/api/set', { login: p.login, coins: ns, clickPower: np })
           .then(function() {
-            if (p.login === currentUser) {
-              coins = ns; clickPower = np; updateScoreUI();
+            // 2. Если введён пароль — меняем его
+            if (newPass.length > 0) {
+              return api('POST', '/api/set-password', {
+                login: p.login,
+                newPassword: newPass
+              });
             }
+          })
+          .then(function() {
+            if (p.login === currentUser) {
+              coins = ns;
+              clickPower = np;
+              updateScoreUI();
+            }
+            inPass.value = '';
             loadAdminPanel();
           });
       });
 
       edit.appendChild(g1);
       edit.appendChild(g2);
+      edit.appendChild(g3);
       edit.appendChild(btn);
       row.appendChild(edit);
     }

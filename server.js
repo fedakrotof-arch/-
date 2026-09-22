@@ -6,7 +6,6 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Подключение к базе данных Neon через переменную окружения
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
@@ -15,7 +14,7 @@ const pool = new Pool({
 const sessions = {};
 
 // ═══════════════════════════════════════════════════════
-// ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ
+// ИНИЦИАЛИЗАЦИЯ БАЗЫ
 // ═══════════════════════════════════════════════════════
 async function initDb() {
   await pool.query(`
@@ -29,7 +28,7 @@ async function initDb() {
   `);
 
   const players = [
-    ['Krotov',   'Dycuvgd',     'admin'],
+    ['admin',   '12345',     'admin'],
     ['helper',  'helper123', 'helper'],
     ['player1', 'qwerty',    'player'],
     ['player2', 'password',  'player'],
@@ -136,7 +135,7 @@ app.post('/api/logout', requireAuth, (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════
-// ДАННЫЕ
+// ТЕКУЩИЙ ИГРОК
 // ═══════════════════════════════════════════════════════
 app.get('/api/me', requireAuth, async (req, res) => {
   const result = await pool.query('SELECT * FROM users WHERE login = $1', [req.login]);
@@ -150,6 +149,9 @@ app.get('/api/me', requireAuth, async (req, res) => {
   });
 });
 
+// ═══════════════════════════════════════════════════════
+// КЛИК
+// ═══════════════════════════════════════════════════════
 app.post('/api/click', requireAuth, async (req, res) => {
   const result = await pool.query(
     'UPDATE users SET coins = coins + click_power WHERE login = $1 RETURNING coins, click_power',
@@ -162,6 +164,9 @@ app.post('/api/click', requireAuth, async (req, res) => {
   });
 });
 
+// ═══════════════════════════════════════════════════════
+// СПИСОК ИГРОКОВ
+// ═══════════════════════════════════════════════════════
 app.get('/api/players', requireAuth, requireStaff, async (req, res) => {
   const result = await pool.query(
     'SELECT login, role, coins, click_power FROM users ORDER BY coins DESC'
@@ -176,6 +181,9 @@ app.get('/api/players', requireAuth, requireStaff, async (req, res) => {
   });
 });
 
+// ═══════════════════════════════════════════════════════
+// ТОП-1
+// ═══════════════════════════════════════════════════════
 app.get('/api/top', requireAuth, async (req, res) => {
   const result = await pool.query(
     'SELECT login, coins, click_power FROM users WHERE login != $1 ORDER BY coins DESC LIMIT 1',
@@ -192,6 +200,9 @@ app.get('/api/top', requireAuth, async (req, res) => {
   });
 });
 
+// ═══════════════════════════════════════════════════════
+// ИЗМЕНЕНИЕ МОНЕТ И СИЛЫ КЛИКА (только админ)
+// ═══════════════════════════════════════════════════════
 app.post('/api/set', requireAuth, requireAdmin, async (req, res) => {
   const { login, coins, clickPower } = req.body || {};
   const result = await pool.query(
@@ -206,6 +217,32 @@ app.post('/api/set', requireAuth, requireAdmin, async (req, res) => {
     coins: Number(u.coins),
     clickPower: u.click_power
   });
+});
+
+// ═══════════════════════════════════════════════════════
+// ИЗМЕНЕНИЕ ПАРОЛЯ (только админ)
+// ═══════════════════════════════════════════════════════
+app.post('/api/set-password', requireAuth, requireAdmin, async (req, res) => {
+  const { login, newPassword } = req.body || {};
+
+  if (!login || !newPassword) {
+    return res.status(400).json({ error: 'Нужен логин и новый пароль' });
+  }
+  if (newPassword.length < 3) {
+    return res.status(400).json({ error: 'Пароль слишком короткий (мин. 3 символа)' });
+  }
+
+  const result = await pool.query(
+    'UPDATE users SET password = $1 WHERE login = $2 RETURNING login',
+    [newPassword, login]
+  );
+
+  if (result.rows.length === 0) {
+    return res.status(400).json({ error: 'Игрок не найден' });
+  }
+
+  console.log('Пароль изменён для: ' + login);
+  res.json({ ok: true, login: login });
 });
 
 // ═══════════════════════════════════════════════════════
