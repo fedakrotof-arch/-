@@ -7,35 +7,14 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const USERS_FILE = path.join(__dirname, 'users.json');
-const SESSIONS_FILE = path.join(__dirname, 'sessions.json');
 
 // ═══════════════════════════════════════════════════════
-// ХРАНИЛИЩЕ СЕССИЙ (сохраняется в файл)
+// СЕССИИ
 // ═══════════════════════════════════════════════════════
-let sessions = {};
-
-function loadSessions() {
-  try {
-    if (fs.existsSync(SESSIONS_FILE)) {
-      const raw = fs.readFileSync(SESSIONS_FILE, 'utf8');
-      sessions = JSON.parse(raw);
-    }
-  } catch (e) {
-    console.error('sessions.json не прочитан:', e.message);
-    sessions = {};
-  }
-}
-
-function saveSessions() {
-  try {
-    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2), 'utf8');
-  } catch (e) {
-    console.error('sessions.json не сохранён:', e.message);
-  }
-}
+const sessions = {};
 
 // ═══════════════════════════════════════════════════════
-// РАБОТА С ФАЙЛОМ ПОЛЬЗОВАТЕЛЕЙ
+// ФАЙЛ ПОЛЬЗОВАТЕЛЕЙ
 // ═══════════════════════════════════════════════════════
 function loadUsers() {
   try {
@@ -55,9 +34,6 @@ function saveUsers(users) {
   }
 }
 
-// Загружаем сессии при старте
-loadSessions();
-
 // ═══════════════════════════════════════════════════════
 // MIDDLEWARE
 // ═══════════════════════════════════════════════════════
@@ -65,12 +41,12 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(__dirname, { index: 'index.html' }));
 
-// Простое логирование запросов
 app.use((req, res, next) => {
   console.log(req.method + ' ' + req.url);
   next();
 });
 
+// Проверка: вошёл ли пользователь
 function requireAuth(req, res, next) {
   const token = req.cookies.token;
   if (!token || !sessions[token]) {
@@ -80,18 +56,22 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// Проверка: админ
 function requireAdmin(req, res, next) {
   const users = loadUsers();
   const u = users[req.login];
+  console.log('requireAdmin: login=' + req.login + ' role=' + (u ? u.role : 'нет'));
   if (!u || u.role !== 'admin') {
     return res.status(403).json({ error: 'Только для админа' });
   }
   next();
 }
 
+// Проверка: админ ИЛИ хелпер
 function requireStaff(req, res, next) {
   const users = loadUsers();
   const u = users[req.login];
+  console.log('requireStaff: login=' + req.login + ' role=' + (u ? u.role : 'нет'));
   if (!u || (u.role !== 'admin' && u.role !== 'helper')) {
     return res.status(403).json({ error: 'Только для админа или хелпера' });
   }
@@ -99,11 +79,11 @@ function requireStaff(req, res, next) {
 }
 
 // ═══════════════════════════════════════════════════════
-// АВТОРИЗАЦИЯ
+// ВХОД / ВЫХОД
 // ═══════════════════════════════════════════════════════
 app.post('/api/login', (req, res) => {
   const { login, password } = req.body || {};
-  console.log('Попытка входа:', login);
+  console.log('Попытка входа: ' + login);
 
   if (!login || !password) {
     return res.status(400).json({ error: 'Введите логин и пароль' });
@@ -115,17 +95,15 @@ app.post('/api/login', (req, res) => {
     console.log('  ✗ Логин не найден');
     return res.status(401).json({ error: 'Неверный логин или пароль' });
   }
-
   if (user.password !== password) {
     console.log('  ✗ Неверный пароль');
     return res.status(401).json({ error: 'Неверный логин или пароль' });
   }
 
-  console.log('  ✓ Успешный вход');
+  console.log('  ✓ Успешный вход, роль: ' + user.role);
 
   const token = crypto.randomBytes(24).toString('hex');
   sessions[token] = login;
-  saveSessions();
 
   res.cookie('token', token, {
     httpOnly: true,
@@ -145,7 +123,6 @@ app.post('/api/login', (req, res) => {
 app.post('/api/logout', requireAuth, (req, res) => {
   const token = req.cookies.token;
   delete sessions[token];
-  saveSessions();
   res.clearCookie('token');
   res.json({ ok: true });
 });
@@ -181,9 +158,9 @@ app.post('/api/click', requireAuth, (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════
-// СПИСОК ИГРОКОВ
+// СПИСОК ИГРОКОВ (админ + хелпер)
 // ═══════════════════════════════════════════════════════
-app.get('/api/players', requireStaff, (req, res) => {
+app.get('/api/players', requireAuth, requireStaff, (req, res) => {
   const users = loadUsers();
   const list = Object.keys(users).map(login => ({
     login: login,
@@ -191,7 +168,6 @@ app.get('/api/players', requireStaff, (req, res) => {
     coins: users[login].coins,
     clickPower: users[login].clickPower
   }));
-
   list.sort((a, b) => b.coins - a.coins);
   res.json({ players: list });
 });
@@ -202,7 +178,6 @@ app.get('/api/players', requireStaff, (req, res) => {
 app.get('/api/top', requireAuth, (req, res) => {
   const users = loadUsers();
   let best = null;
-
   for (const login in users) {
     if (login === req.login) continue;
     const u = users[login];
@@ -210,7 +185,6 @@ app.get('/api/top', requireAuth, (req, res) => {
       best = { login: login, coins: u.coins, clickPower: u.clickPower };
     }
   }
-
   res.json({ top: best });
 });
 
@@ -226,7 +200,6 @@ app.post('/api/set', requireAuth, requireAdmin, (req, res) => {
   }
 
   const u = users[login];
-
   if (typeof coins === 'number' && coins >= 0) u.coins = Math.floor(coins);
   if (typeof clickPower === 'number' && clickPower >= 1) u.clickPower = Math.floor(clickPower);
 
