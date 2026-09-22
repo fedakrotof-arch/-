@@ -7,11 +7,32 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const USERS_FILE = path.join(__dirname, 'users.json');
+const SESSIONS_FILE = path.join(__dirname, 'sessions.json');
 
 // ═══════════════════════════════════════════════════════
-// СЕССИИ В ПАМЯТИ
+// ХРАНИЛИЩЕ СЕССИЙ (сохраняется в файл)
 // ═══════════════════════════════════════════════════════
-const sessions = {}; // token -> login
+let sessions = {};
+
+function loadSessions() {
+  try {
+    if (fs.existsSync(SESSIONS_FILE)) {
+      const raw = fs.readFileSync(SESSIONS_FILE, 'utf8');
+      sessions = JSON.parse(raw);
+    }
+  } catch (e) {
+    console.error('sessions.json не прочитан:', e.message);
+    sessions = {};
+  }
+}
+
+function saveSessions() {
+  try {
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2), 'utf8');
+  } catch (e) {
+    console.error('sessions.json не сохранён:', e.message);
+  }
+}
 
 // ═══════════════════════════════════════════════════════
 // РАБОТА С ФАЙЛОМ ПОЛЬЗОВАТЕЛЕЙ
@@ -21,7 +42,7 @@ function loadUsers() {
     const raw = fs.readFileSync(USERS_FILE, 'utf8');
     return JSON.parse(raw);
   } catch (e) {
-    console.error('Не могу прочитать users.json:', e.message);
+    console.error('users.json не прочитан:', e.message);
     return {};
   }
 }
@@ -30,9 +51,12 @@ function saveUsers(users) {
   try {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
   } catch (e) {
-    console.error('Не могу сохранить users.json:', e.message);
+    console.error('users.json не сохранён:', e.message);
   }
 }
+
+// Загружаем сессии при старте
+loadSessions();
 
 // ═══════════════════════════════════════════════════════
 // MIDDLEWARE
@@ -40,6 +64,12 @@ function saveUsers(users) {
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(__dirname, { index: 'index.html' }));
+
+// Простое логирование запросов
+app.use((req, res, next) => {
+  console.log(req.method + ' ' + req.url);
+  next();
+});
 
 function requireAuth(req, res, next) {
   const token = req.cookies.token;
@@ -73,6 +103,8 @@ function requireStaff(req, res, next) {
 // ═══════════════════════════════════════════════════════
 app.post('/api/login', (req, res) => {
   const { login, password } = req.body || {};
+  console.log('Попытка входа:', login);
+
   if (!login || !password) {
     return res.status(400).json({ error: 'Введите логин и пароль' });
   }
@@ -80,16 +112,20 @@ app.post('/api/login', (req, res) => {
   const users = loadUsers();
   const user = users[login];
   if (!user) {
+    console.log('  ✗ Логин не найден');
     return res.status(401).json({ error: 'Неверный логин или пароль' });
   }
 
-  // ⬇⬇⬇ ПРОСТАЯ ПРОВЕРКА ПАРОЛЯ (открытый текст)
   if (user.password !== password) {
+    console.log('  ✗ Неверный пароль');
     return res.status(401).json({ error: 'Неверный логин или пароль' });
   }
+
+  console.log('  ✓ Успешный вход');
 
   const token = crypto.randomBytes(24).toString('hex');
   sessions[token] = login;
+  saveSessions();
 
   res.cookie('token', token, {
     httpOnly: true,
@@ -109,6 +145,7 @@ app.post('/api/login', (req, res) => {
 app.post('/api/logout', requireAuth, (req, res) => {
   const token = req.cookies.token;
   delete sessions[token];
+  saveSessions();
   res.clearCookie('token');
   res.json({ ok: true });
 });
@@ -144,7 +181,7 @@ app.post('/api/click', requireAuth, (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════
-// СПИСОК ИГРОКОВ (для админа и хелпера)
+// СПИСОК ИГРОКОВ
 // ═══════════════════════════════════════════════════════
 app.get('/api/players', requireStaff, (req, res) => {
   const users = loadUsers();
@@ -160,7 +197,7 @@ app.get('/api/players', requireStaff, (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════
-// ТОП-1 (для обычных игроков)
+// ТОП-1
 // ═══════════════════════════════════════════════════════
 app.get('/api/top', requireAuth, (req, res) => {
   const users = loadUsers();
@@ -178,7 +215,7 @@ app.get('/api/top', requireAuth, (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════
-// ИЗМЕНЕНИЕ ДАННЫХ ИГРОКА (только админ)
+// ИЗМЕНЕНИЕ ДАННЫХ (только админ)
 // ═══════════════════════════════════════════════════════
 app.post('/api/set', requireAuth, requireAdmin, (req, res) => {
   const { login, coins, clickPower } = req.body || {};
@@ -202,5 +239,7 @@ app.post('/api/set', requireAuth, requireAdmin, (req, res) => {
 // СТАРТ
 // ═══════════════════════════════════════════════════════
 app.listen(PORT, () => {
+  console.log('========================================');
   console.log('Сервер запущен на порту ' + PORT);
+  console.log('========================================');
 });
