@@ -1,14 +1,15 @@
 {
   "name": "clicker-server",
   "version": "1.0.0",
-  "description": "Кликер с серверной системой аккаунтов",
+  "description": "Кликер с базой данных Neon",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "cookie-parser": "^1.4.6"
+    "cookie-parser": "^1.4.6",
+    "pg": "^8.11.3"
   },
   "engines": {
     "node": ">=18"

@@ -1,37 +1,51 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
-const fs = require('fs');
-const path = require('path');
+const { Pool } = require('pg');
 const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const USERS_FILE = path.join(__dirname, 'users.json');
 
-// ═══════════════════════════════════════════════════════
-// СЕССИИ
-// ═══════════════════════════════════════════════════════
+// Подключение к базе данных Neon через переменную окружения
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+
 const sessions = {};
 
 // ═══════════════════════════════════════════════════════
-// ФАЙЛ ПОЛЬЗОВАТЕЛЕЙ
+// ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ
 // ═══════════════════════════════════════════════════════
-function loadUsers() {
-  try {
-    const raw = fs.readFileSync(USERS_FILE, 'utf8');
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('users.json не прочитан:', e.message);
-    return {};
-  }
-}
+async function initDb() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      login VARCHAR(50) PRIMARY KEY,
+      password VARCHAR(100) NOT NULL,
+      role VARCHAR(20) NOT NULL,
+      coins BIGINT DEFAULT 0,
+      click_power INTEGER DEFAULT 1
+    );
+  `);
 
-function saveUsers(users) {
-  try {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
-  } catch (e) {
-    console.error('users.json не сохранён:', e.message);
+  const players = [
+    ['admin',   '12345',     'admin'],
+    ['helper',  'helper123', 'helper'],
+    ['player1', 'qwerty',    'player'],
+    ['player2', 'password',  'player'],
+    ['dima',    'dima2025',  'player'],
+    ['vasya',   'vasya228',  'player']
+  ];
+
+  for (const [login, password, role] of players) {
+    await pool.query(
+      `INSERT INTO users (login, password, role, coins, click_power)
+       VALUES ($1, $2, $3, 0, 1)
+       ON CONFLICT (login) DO NOTHING`,
+      [login, password, role]
+    );
   }
+  console.log('База данных готова');
 }
 
 // ═══════════════════════════════════════════════════════
@@ -46,7 +60,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// Проверка: вошёл ли пользователь
 function requireAuth(req, res, next) {
   const token = req.cookies.token;
   if (!token || !sessions[token]) {
@@ -56,51 +69,47 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// Проверка: админ
 function requireAdmin(req, res, next) {
-  const users = loadUsers();
-  const u = users[req.login];
-  console.log('requireAdmin: login=' + req.login + ' role=' + (u ? u.role : 'нет'));
-  if (!u || u.role !== 'admin') {
-    return res.status(403).json({ error: 'Только для админа' });
-  }
-  next();
+  pool.query('SELECT role FROM users WHERE login = $1', [req.login])
+    .then(result => {
+      if (result.rows.length === 0 || result.rows[0].role !== 'admin') {
+        return res.status(403).json({ error: 'Только для админа' });
+      }
+      next();
+    })
+    .catch(() => res.status(500).json({ error: 'Ошибка БД' }));
 }
 
-// Проверка: админ ИЛИ хелпер
 function requireStaff(req, res, next) {
-  const users = loadUsers();
-  const u = users[req.login];
-  console.log('requireStaff: login=' + req.login + ' role=' + (u ? u.role : 'нет'));
-  if (!u || (u.role !== 'admin' && u.role !== 'helper')) {
-    return res.status(403).json({ error: 'Только для админа или хелпера' });
-  }
-  next();
+  pool.query('SELECT role FROM users WHERE login = $1', [req.login])
+    .then(result => {
+      const role = result.rows.length > 0 ? result.rows[0].role : '';
+      if (role !== 'admin' && role !== 'helper') {
+        return res.status(403).json({ error: 'Только для админа или хелпера' });
+      }
+      next();
+    })
+    .catch(() => res.status(500).json({ error: 'Ошибка БД' }));
 }
 
 // ═══════════════════════════════════════════════════════
-// ВХОД / ВЫХОД
+// АВТОРИЗАЦИЯ
 // ═══════════════════════════════════════════════════════
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { login, password } = req.body || {};
-  console.log('Попытка входа: ' + login);
-
   if (!login || !password) {
     return res.status(400).json({ error: 'Введите логин и пароль' });
   }
 
-  const users = loadUsers();
-  const user = users[login];
-  if (!user) {
-    console.log('  ✗ Логин не найден');
-    return res.status(401).json({ error: 'Неверный логин или пароль' });
-  }
-  if (user.password !== password) {
-    console.log('  ✗ Неверный пароль');
+  const result = await pool.query('SELECT * FROM users WHERE login = $1', [login]);
+  if (result.rows.length === 0) {
     return res.status(401).json({ error: 'Неверный логин или пароль' });
   }
 
-  console.log('  ✓ Успешный вход, роль: ' + user.role);
+  const user = result.rows[0];
+  if (user.password !== password) {
+    return res.status(401).json({ error: 'Неверный логин или пароль' });
+  }
 
   const token = crypto.randomBytes(24).toString('hex');
   sessions[token] = login;
@@ -113,106 +122,102 @@ app.post('/api/login', (req, res) => {
 
   res.json({
     ok: true,
-    login: login,
+    login: user.login,
     role: user.role,
-    coins: user.coins,
-    clickPower: user.clickPower
+    coins: Number(user.coins),
+    clickPower: user.click_power
   });
 });
 
 app.post('/api/logout', requireAuth, (req, res) => {
-  const token = req.cookies.token;
-  delete sessions[token];
+  delete sessions[req.cookies.token];
   res.clearCookie('token');
   res.json({ ok: true });
 });
 
 // ═══════════════════════════════════════════════════════
-// ТЕКУЩИЙ ИГРОК
+// ДАННЫЕ
 // ═══════════════════════════════════════════════════════
-app.get('/api/me', requireAuth, (req, res) => {
-  const users = loadUsers();
-  const u = users[req.login];
-  if (!u) return res.status(401).json({ error: 'Аккаунт не найден' });
-
+app.get('/api/me', requireAuth, async (req, res) => {
+  const result = await pool.query('SELECT * FROM users WHERE login = $1', [req.login]);
+  if (result.rows.length === 0) return res.status(401).json({ error: 'Аккаунт не найден' });
+  const u = result.rows[0];
   res.json({
-    login: req.login,
+    login: u.login,
     role: u.role,
-    coins: u.coins,
-    clickPower: u.clickPower
+    coins: Number(u.coins),
+    clickPower: u.click_power
   });
 });
 
-// ═══════════════════════════════════════════════════════
-// КЛИК
-// ═══════════════════════════════════════════════════════
-app.post('/api/click', requireAuth, (req, res) => {
-  const users = loadUsers();
-  const u = users[req.login];
-  if (!u) return res.status(401).json({ error: 'Аккаунт не найден' });
-
-  u.coins += u.clickPower;
-  saveUsers(users);
-
-  res.json({ coins: u.coins, clickPower: u.clickPower });
+app.post('/api/click', requireAuth, async (req, res) => {
+  const result = await pool.query(
+    'UPDATE users SET coins = coins + click_power WHERE login = $1 RETURNING coins, click_power',
+    [req.login]
+  );
+  if (result.rows.length === 0) return res.status(401).json({ error: 'Аккаунт не найден' });
+  res.json({
+    coins: Number(result.rows[0].coins),
+    clickPower: result.rows[0].click_power
+  });
 });
 
-// ═══════════════════════════════════════════════════════
-// СПИСОК ИГРОКОВ (админ + хелпер)
-// ═══════════════════════════════════════════════════════
-app.get('/api/players', requireAuth, requireStaff, (req, res) => {
-  const users = loadUsers();
-  const list = Object.keys(users).map(login => ({
-    login: login,
-    role: users[login].role,
-    coins: users[login].coins,
-    clickPower: users[login].clickPower
-  }));
-  list.sort((a, b) => b.coins - a.coins);
-  res.json({ players: list });
+app.get('/api/players', requireAuth, requireStaff, async (req, res) => {
+  const result = await pool.query(
+    'SELECT login, role, coins, click_power FROM users ORDER BY coins DESC'
+  );
+  res.json({
+    players: result.rows.map(u => ({
+      login: u.login,
+      role: u.role,
+      coins: Number(u.coins),
+      clickPower: u.click_power
+    }))
+  });
 });
 
-// ═══════════════════════════════════════════════════════
-// ТОП-1
-// ═══════════════════════════════════════════════════════
-app.get('/api/top', requireAuth, (req, res) => {
-  const users = loadUsers();
-  let best = null;
-  for (const login in users) {
-    if (login === req.login) continue;
-    const u = users[login];
-    if (!best || u.coins > best.coins) {
-      best = { login: login, coins: u.coins, clickPower: u.clickPower };
+app.get('/api/top', requireAuth, async (req, res) => {
+  const result = await pool.query(
+    'SELECT login, coins, click_power FROM users WHERE login != $1 ORDER BY coins DESC LIMIT 1',
+    [req.login]
+  );
+  if (result.rows.length === 0) return res.json({ top: null });
+  const u = result.rows[0];
+  res.json({
+    top: {
+      login: u.login,
+      coins: Number(u.coins),
+      clickPower: u.click_power
     }
-  }
-  res.json({ top: best });
+  });
 });
 
-// ═══════════════════════════════════════════════════════
-// ИЗМЕНЕНИЕ ДАННЫХ (только админ)
-// ═══════════════════════════════════════════════════════
-app.post('/api/set', requireAuth, requireAdmin, (req, res) => {
+app.post('/api/set', requireAuth, requireAdmin, async (req, res) => {
   const { login, coins, clickPower } = req.body || {};
-  const users = loadUsers();
-
-  if (!login || !Object.prototype.hasOwnProperty.call(users, login)) {
-    return res.status(400).json({ error: 'Игрок не найден' });
-  }
-
-  const u = users[login];
-  if (typeof coins === 'number' && coins >= 0) u.coins = Math.floor(coins);
-  if (typeof clickPower === 'number' && clickPower >= 1) u.clickPower = Math.floor(clickPower);
-
-  saveUsers(users);
-
-  res.json({ ok: true, login: login, coins: u.coins, clickPower: u.clickPower });
+  const result = await pool.query(
+    'UPDATE users SET coins = $1, click_power = $2 WHERE login = $3 RETURNING login, coins, click_power',
+    [Math.max(0, Math.floor(coins)), Math.max(1, Math.floor(clickPower)), login]
+  );
+  if (result.rows.length === 0) return res.status(400).json({ error: 'Игрок не найден' });
+  const u = result.rows[0];
+  res.json({
+    ok: true,
+    login: u.login,
+    coins: Number(u.coins),
+    clickPower: u.click_power
+  });
 });
 
 // ═══════════════════════════════════════════════════════
 // СТАРТ
 // ═══════════════════════════════════════════════════════
-app.listen(PORT, () => {
-  console.log('========================================');
-  console.log('Сервер запущен на порту ' + PORT);
-  console.log('========================================');
+initDb().then(() => {
+  app.listen(PORT, () => {
+    console.log('========================================');
+    console.log('Сервер запущен на порту ' + PORT);
+    console.log('========================================');
+  });
+}).catch(err => {
+  console.error('Ошибка инициализации БД:', err);
+  process.exit(1);
 });
