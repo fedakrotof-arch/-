@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>�9�4 ���ݧڧܧ֧�</title>
+<title>👆 Кликер</title>
 
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -363,68 +363,68 @@
 <body>
 
 <div class="login-screen" id="loginScreen">
-  <h1>�9�4 ���ݧڧܧ֧�</h1>
-  <p class="sub">������ ��� �ݧ�ԧڧߧ� �� ��ѧ��ݧ�</p>
+  <h1>👆 Кликер</h1>
+  <p class="sub">Вход по логину и паролю</p>
   <div class="login-form">
-    <label for="loginUser">����ԧڧ�</label>
-    <input type="text" id="loginUser" autocomplete="off" placeholder="���ӧ֧էڧ�� �ݧ�ԧڧ�">
-    <label for="loginPass">���ѧ��ݧ�</label>
-    <input type="password" id="loginPass" autocomplete="off" placeholder="���ӧ֧էڧ�� ��ѧ��ݧ�">
-    <button class="login-btn" id="loginBtn">����ۧ��</button>
+    <label for="loginUser">Логин</label>
+    <input type="text" id="loginUser" autocomplete="off" placeholder="Введите логин">
+    <label for="loginPass">Пароль</label>
+    <input type="password" id="loginPass" autocomplete="off" placeholder="Введите пароль">
+    <button class="login-btn" id="loginBtn">Войти</button>
     <div class="login-error" id="loginError"></div>
   </div>
 </div>
 
 <div class="game-screen" id="gameScreen">
   <div class="user-bar">
-    <span>���� �ӧ��ݧ� �ܧѧ� <span class="user-name" id="currentUser"></span></span>
+    <span>Вы вошли как <span class="user-name" id="currentUser"></span></span>
     <span id="roleBadge" class="role-badge" style="display:none;"></span>
-    <button class="logout-btn" id="logoutBtn">�����ۧ��</button>
+    <button class="logout-btn" id="logoutBtn">Выйти</button>
   </div>
 
-  <h1 class="game-title">�9�4 ���ݧڧܧ֧�</h1>
+  <h1 class="game-title">👆 Кликер</h1>
 
   <div class="score-box">
     <div class="score" id="score">0</div>
-    <div class="score-label">����ߧ֧�</div>
+    <div class="score-label">Монет</div>
   </div>
 
   <div class="power-box">
-    ���ڧݧ� �ܧݧڧܧ�: <span class="num" id="powerDisplay">1</span>
+    Сила клика: <span class="num" id="powerDisplay">1</span>
   </div>
 
-  <div class="click-area" id="clickArea">�9�0</div>
+  <div class="click-area" id="clickArea">💰</div>
 
-  <div class="hint">���ѧ�ѧ� �ާ�ߧ֧�ܧ� �� �ܧѧاէ�� �ߧѧاѧ�ڧ� �էѧק� ��ڧݧ� �ܧݧڧܧ�</div>
+  <div class="hint">Тапай монетку — каждое нажатие даёт силу клика</div>
 
   <div class="top-block" id="topBlock">
-    <span class="top-crown">�9�5</span>
-    <div class="top-title">������ڧ� �ڧԧ���</div>
-    <div class="top-login" id="topLogin">��</div>
+    <span class="top-crown">👑</span>
+    <div class="top-title">Лучший игрок</div>
+    <div class="top-login" id="topLogin">—</div>
     <div class="top-stats">
       <div class="top-stat">
         <span class="val" id="topScore">0</span>
-        <div class="lbl">����ߧ֧�</div>
+        <div class="lbl">Монет</div>
       </div>
       <div class="top-stat">
         <span class="val" id="topPower">1</span>
-        <div class="lbl">���ڧݧ� �ܧݧڧܧ�</div>
+        <div class="lbl">Сила клика</div>
       </div>
     </div>
   </div>
 
   <div class="panel admin" id="adminPanel">
-    <div class="panel-title">�9�5 ���ѧߧ֧ݧ� �ѧէާڧߧ�</div>
-    <div class="panel-sub">���֧�� ���ڧ���. ����ا֧�� �ާ֧ߧ��� �ާ�ߧ֧�� �� ��ڧݧ� �ܧݧڧܧ�</div>
+    <div class="panel-title">👑 Панель админа</div>
+    <div class="panel-sub">Весь список. Можешь менять монеты и силу клика</div>
     <div class="player-list" id="adminList"></div>
-    <button class="panel-refresh" id="adminRefresh">�9�4 ���ҧߧ�ӧڧ��</button>
+    <button class="panel-refresh" id="adminRefresh">🔄 Обновить</button>
   </div>
 
   <div class="panel helper" id="helperPanel">
-    <div class="panel-title">�0�1 ���ѧߧ֧ݧ� ��֧ݧ�֧��</div>
-    <div class="panel-sub">���֧�� ���ڧ���. ����ݧ�ܧ� �����ާ���</div>
+    <div class="panel-title">🛡 Панель хелпера</div>
+    <div class="panel-sub">Весь список. Только просмотр</div>
     <div class="player-list" id="helperList"></div>
-    <button class="panel-refresh" id="helperRefresh">�9�4 ���ҧߧ�ӧڧ��</button>
+    <button class="panel-refresh" id="helperRefresh">🔄 Обновить</button>
   </div>
 </div>
 
@@ -459,9 +459,9 @@
   var helperPanel  = document.getElementById('helperPanel');
   var helperList   = document.getElementById('helperList');
 
-  // �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-  // ������������ ����������
-  // �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  // ═══════════════════════════════════════════════════════
+  // ФОРМАТ ЧИСЛА
+  // ═══════════════════════════════════════════════════════
   function formatNumber(n) {
     if (n < 1000) return '' + n;
     if (n < 1e6)  return (n / 1e3).toFixed(n < 1e4 ? 1 : 0) + 'K';
@@ -470,9 +470,9 @@
     return (n / 1e12).toFixed(2) + 'T';
   }
 
-  // �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-  // ������������������ �� ��������������
-  // �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  // ═══════════════════════════════════════════════════════
+  // ОБРАЩЕНИЕ К СЕРВЕРУ
+  // ═══════════════════════════════════════════════════════
   function api(method, url, body) {
     var opts = {
       method: method,
@@ -490,27 +490,27 @@
     });
   }
 
-  // �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-  // ��������
-  // �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  // ═══════════════════════════════════════════════════════
+  // ВХОД
+  // ═══════════════════════════════════════════════════════
   function tryLogin() {
     var user = loginUser.value.trim();
     var pass = loginPass.value;
 
     if (!user || !pass) {
-      loginError.textContent = '���ѧ��ݧߧڧ�� ��ҧ� ���ݧ�';
+      loginError.textContent = 'Заполните оба поля';
       return;
     }
 
     loginBtn.disabled = true;
-    loginError.textContent = '������...';
+    loginError.textContent = 'Вход...';
 
     api('POST', '/api/login', { login: user, password: pass })
       .then(function(res) {
         loginBtn.disabled = false;
 
         if (!res.ok) {
-          loginError.textContent = res.data.error || '����ڧҧܧ� �ӧ��է�';
+          loginError.textContent = res.data.error || 'Ошибка входа';
           loginPass.value = '';
           return;
         }
@@ -524,7 +524,7 @@
       })
       .catch(function(err) {
         loginBtn.disabled = false;
-        loginError.textContent = '����ڧҧܧ�: ' + (err.message || '�ߧ֧� ��ӧ�٧�');
+        loginError.textContent = 'Ошибка: ' + (err.message || 'нет связи');
       });
   }
 
@@ -581,9 +581,9 @@
     powerDisplay.textContent = formatNumber(clickPower);
   }
 
-  // �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-  // ��������
-  // �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  // ═══════════════════════════════════════════════════════
+  // КЛИК
+  // ═══════════════════════════════════════════════════════
   function doClick(e) {
     if (!currentUser) return;
 
