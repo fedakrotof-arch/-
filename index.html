@@ -6,209 +6,546 @@
 <title>👆 Кликер</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
   body {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-    color: #eee; min-height: 100vh;
-    display: flex; flex-direction: column; align-items: center;
-    padding: 16px; user-select: none; overflow-x: hidden;
+    color: #eee;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    user-select: none;
+    overflow-x: hidden;
   }
+
+  /* ═══════════ ЭКРАН ВХОДА ═══════════ */
   .login-screen {
-    display: flex; flex-direction: column; align-items: center;
-    max-width: 340px; width: 100%; margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 340px;
+    width: 100%;
+    margin: auto;
   }
   .login-screen h1 { font-size: 30px; color: #cddc39; margin-bottom: 8px; }
-  .login-screen .sub { color: #888; font-size: 13px; margin-bottom: 28px; }
+  .login-screen .sub { color: #888; font-size: 13px; margin-bottom: 24px; }
+
   .login-form {
-    width: 100%; background: rgba(0,0,0,0.3);
-    border: 2px solid #2a3a5c; border-radius: 16px; padding: 22px;
+    width: 100%;
+    background: rgba(0,0,0,0.3);
+    border: 2px solid #2a3a5c;
+    border-radius: 16px;
+    padding: 22px;
   }
   .login-form label {
-    display: block; font-size: 12px; color: #888;
-    margin-bottom: 6px; text-transform: uppercase;
+    display: block;
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 6px;
+    text-transform: uppercase;
   }
   .login-form input {
-    width: 100%; background: #16213e; border: 2px solid #2a3a5c;
-    border-radius: 10px; padding: 12px 14px; color: #fff;
-    font-size: 15px; margin-bottom: 14px; outline: none;
+    width: 100%;
+    background: #16213e;
+    border: 2px solid #2a3a5c;
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: #fff;
+    font-size: 15px;
+    margin-bottom: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: inherit;
   }
   .login-form input:focus { border-color: #4caf50; }
+
   .login-btn {
-    width: 100%; background: #4caf50; color: #fff; border: none;
-    border-radius: 10px; padding: 14px; font-size: 16px;
-    font-weight: bold; cursor: pointer;
+    width: 100%;
+    background: #4caf50;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
   }
   .login-btn:active { transform: scale(0.97); }
-  .login-btn:disabled { background: #555; }
+  .login-btn:disabled { background: #555; cursor: wait; }
+
   .login-error {
-    color: #e74c3c; font-size: 13px; text-align: center;
-    margin-top: 12px; min-height: 18px; font-weight: bold;
+    color: #e74c3c;
+    font-size: 13px;
+    text-align: center;
+    margin-top: 12px;
+    min-height: 18px;
+    font-weight: bold;
   }
+
+  /* Контакт Telegram */
+  .login-contact {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 13px;
+    color: #888;
+  }
+  .login-contact p {
+    margin-bottom: 10px;
+    line-height: 1.4;
+  }
+  .tg-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #0088cc, #00a0e3);
+    color: #fff;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 15px;
+    box-shadow: 0 4px 14px rgba(0, 136, 204, 0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .tg-link:active { transform: scale(0.96); }
+  .tg-link svg { width: 20px; height: 20px; }
+  .tg-hint {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.5;
+  }
+  .tg-hint b { color: #8bc34a; }
+  .tg-hint-2 {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.5;
+    font-style: italic;
+  }
+  .tg-hint-2 b { color: #ffb300; font-style: normal; }
+
+  /* ═══════════ ЭКРАН ИГРЫ ═══════════ */
   .game-screen {
-    display: none; flex-direction: column; align-items: center;
-    width: 100%; max-width: 500px; margin: auto;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 500px;
+    margin: auto;
   }
   .game-screen.active { display: flex; }
   .login-screen.hidden { display: none; }
+
   .user-bar {
-    display: flex; align-items: center; gap: 10px;
-    margin-bottom: 16px; font-size: 13px; color: #888;
-    flex-wrap: wrap; justify-content: center;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #888;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .user-name { color: #8bc34a; font-weight: bold; }
+
   .role-badge {
-    font-size: 10px; font-weight: bold; padding: 2px 8px;
-    border-radius: 6px; text-transform: uppercase; color: #fff;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    color: #fff;
   }
   .role-badge.admin  { background: #e74c3c; }
   .role-badge.helper { background: #ff9800; }
+
   .logout-btn {
-    background: transparent; border: 1px solid #444; color: #888;
-    border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer;
+    background: transparent;
+    border: 1px solid #444;
+    color: #888;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    cursor: pointer;
   }
+
   h1.game-title { font-size: 26px; margin-bottom: 14px; color: #cddc39; }
+
   .score-box {
-    background: rgba(0,0,0,0.3); border: 2px solid #4caf50;
-    border-radius: 16px; padding: 16px 40px; margin-bottom: 12px;
+    background: rgba(0,0,0,0.3);
+    border: 2px solid #4caf50;
+    border-radius: 16px;
+    padding: 16px 40px;
+    margin-bottom: 12px;
     text-align: center;
   }
   .score {
-    font-size: 52px; font-weight: bold; color: #8bc34a;
-    font-variant-numeric: tabular-nums; line-height: 1;
+    font-size: 52px;
+    font-weight: bold;
+    color: #8bc34a;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
   }
   .score-label {
-    font-size: 12px; color: #888;
-    text-transform: uppercase; margin-top: 8px;
+    font-size: 12px;
+    color: #888;
+    text-transform: uppercase;
+    margin-top: 8px;
   }
+
   .power-box {
-    background: rgba(0,0,0,0.2); border: 1px solid #2a3a5c;
-    border-radius: 10px; padding: 8px 16px; margin-bottom: 20px;
-    font-size: 13px; color: #8bc34a;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid #2a3a5c;
+    border-radius: 10px;
+    padding: 8px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #8bc34a;
   }
   .power-box .num { font-weight: bold; color: #cddc39; }
+
   .click-area {
-    width: 220px; height: 220px; border-radius: 50%;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
     background: radial-gradient(circle at 30% 30%, #ffd54f, #f9a825 60%, #e65100);
     border: 6px solid #ffb300;
-    box-shadow: 0 8px 24px rgba(255, 193, 7, 0.4), inset 0 -6px 12px rgba(0,0,0,0.2);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 100px; cursor: pointer; margin: 0 auto;
+    box-shadow: 0 8px 24px rgba(255, 193, 7, 0.4),
+                inset 0 -6px 12px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 100px;
+    cursor: pointer;
+    margin: 0 auto;
     transition: transform 0.08s;
   }
   .click-area:active { transform: scale(0.92); }
+
   .float-text {
-    position: fixed; color: #ffeb3b; font-weight: bold; font-size: 24px;
-    pointer-events: none; animation: floatUp 0.8s ease-out forwards;
-    z-index: 200; text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    position: fixed;
+    color: #ffeb3b;
+    font-weight: bold;
+    font-size: 24px;
+    pointer-events: none;
+    animation: floatUp 0.8s ease-out forwards;
+    z-index: 200;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.6);
   }
   @keyframes floatUp {
     0%   { opacity: 1; transform: translate(-50%, 0) scale(1); }
     100% { opacity: 0; transform: translate(-50%, -80px) scale(1.4); }
   }
+
   .hint { margin-top: 18px; color: #666; font-size: 13px; text-align: center; }
+
   .top-block {
-    display: none; width: 100%; margin-top: 24px;
+    display: none;
+    width: 100%;
+    margin-top: 24px;
     background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,152,0,0.05));
-    border: 2px solid #ffb300; border-radius: 14px;
-    padding: 18px 16px; text-align: center;
+    border: 2px solid #ffb300;
+    border-radius: 14px;
+    padding: 18px 16px;
+    text-align: center;
   }
   .top-block.visible { display: block; }
   .top-crown { font-size: 42px; display: block; margin-bottom: 6px; }
   .top-title {
-    font-size: 11px; color: #ffb300; text-transform: uppercase;
-    letter-spacing: 2px; font-weight: bold; margin-bottom: 10px;
+    font-size: 11px;
+    color: #ffb300;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: bold;
+    margin-bottom: 10px;
   }
   .top-login {
-    font-size: 22px; font-weight: bold; color: #fff;
-    margin-bottom: 12px; word-break: break-all;
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 12px;
+    word-break: break-all;
   }
   .top-stats { display: flex; gap: 22px; justify-content: center; }
   .top-stat .val {
-    font-weight: bold; color: #cddc39; font-size: 20px; display: block;
+    font-weight: bold;
+    color: #cddc39;
+    font-size: 20px;
+    display: block;
   }
   .top-stat .lbl {
-    font-size: 10px; color: #888; text-transform: uppercase; margin-top: 2px;
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    margin-top: 2px;
   }
+
+  /* ═══════════ ПАНЕЛИ ═══════════ */
   .panel {
-    display: none; width: 100%; margin-top: 24px;
-    background: rgba(0,0,0,0.35); border-radius: 16px; padding: 16px;
+    display: none;
+    width: 100%;
+    margin-top: 24px;
+    background: rgba(0,0,0,0.35);
+    border-radius: 16px;
+    padding: 16px;
   }
   .panel.visible { display: block; }
   .panel.admin  { border: 2px solid #e74c3c; }
   .panel.helper { border: 2px solid #ff9800; }
+
   .panel-title {
-    font-size: 15px; font-weight: bold; margin-bottom: 12px;
-    text-align: center; text-transform: uppercase; letter-spacing: 1px;
+    font-size: 15px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
   .panel.admin .panel-title  { color: #e74c3c; }
   .panel.helper .panel-title { color: #ff9800; }
+
   .panel-sub {
-    font-size: 11px; color: #888; text-align: center; margin-bottom: 14px;
+    font-size: 11px;
+    color: #888;
+    text-align: center;
+    margin-bottom: 14px;
   }
+
   .player-list { display: flex; flex-direction: column; gap: 8px; }
+
   .player-row {
-    background: #16213e; border: 1px solid #2a3a5c;
-    border-radius: 10px; padding: 10px 12px;
+    background: #16213e;
+    border: 1px solid #2a3a5c;
+    border-radius: 10px;
+    padding: 10px 12px;
   }
   .player-row.me { border-color: #4caf50; background: rgba(76,175,80,0.1); }
+
   .player-row-head {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
   .player-login { color: #fff; font-weight: bold; font-size: 14px; }
   .player-login .dot {
-    display: inline-block; width: 8px; height: 8px;
-    border-radius: 50%; background: #4caf50; margin-right: 8px;
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4caf50;
+    margin-right: 8px;
   }
-  .player-stats { display: flex; gap: 14px; font-size: 12px; color: #aaa; }
+  .player-stats {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+    color: #aaa;
+  }
   .player-stats .val { color: #8bc34a; font-weight: bold; }
+
   .player-edit {
-    display: none; gap: 8px; margin-top: 10px;
-    padding-top: 10px; border-top: 1px solid #2a3a5c;
+    display: none;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #2a3a5c;
     flex-wrap: wrap;
   }
   .player-row.editable .player-edit { display: flex; }
+
   .player-edit input {
-    flex: 1; background: #0f1a2e; border: 1px solid #2a3a5c;
-    border-radius: 6px; padding: 6px 8px; color: #fff;
-    font-size: 12px; outline: none; width: 100%; min-width: 0;
+    flex: 1;
+    background: #0f1a2e;
+    border: 1px solid #2a3a5c;
+    border-radius: 6px;
+    padding: 6px 8px;
+    color: #fff;
+    font-size: 12px;
+    outline: none;
+    width: 100%;
+    min-width: 0;
   }
   .player-edit input:focus { border-color: #4caf50; }
-  .edit-group { flex: 1; min-width: 80px; }
+
+  .edit-group { flex: 1; min-width: 70px; }
   .edit-group label {
-    display: block; font-size: 10px; color: #666;
-    text-transform: uppercase; margin-bottom: 3px;
+    display: block;
+    font-size: 9px;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 3px;
   }
+
   .edit-btn {
-    background: #4caf50; color: #fff; border: none;
-    border-radius: 6px; padding: 6px 10px; font-size: 11px;
-    font-weight: bold; cursor: pointer; align-self: flex-end;
-    min-height: 32px;
+    background: #4caf50;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    align-self: flex-end;
+    min-height: 30px;
   }
   .edit-btn:active { transform: scale(0.95); }
+
   .panel-refresh {
-    display: block; width: 100%; margin-top: 12px; color: #fff;
-    border: none; border-radius: 10px; padding: 10px;
-    font-size: 13px; font-weight: bold; cursor: pointer;
+    display: block;
+    width: 100%;
+    margin-top: 12px;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
   }
   .panel.admin .panel-refresh  { background: #e74c3c; }
   .panel.helper .panel-refresh { background: #ff9800; }
+
+  /* Кнопка добавления игрока */
+  .add-user-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    background: #4caf50;
+    color: #fff;
+    border: 2px solid #66bb6a;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .add-user-btn:active { transform: scale(0.97); }
+
+  /* Модальное окно добавления */
+  .add-user-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 20px;
+  }
+  .add-user-modal.visible { display: flex; }
+
+  .add-user-box {
+    background: #16213e;
+    border: 2px solid #4caf50;
+    border-radius: 14px;
+    padding: 22px;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .add-user-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #cddc39;
+    text-align: center;
+    margin-bottom: 18px;
+  }
+
+  .add-user-box label {
+    display: block;
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+  }
+
+  .add-user-box input,
+  .add-user-box select {
+    width: 100%;
+    background: #0f1a2e;
+    border: 2px solid #2a3a5c;
+    border-radius: 8px;
+    padding: 10px;
+    color: #fff;
+    font-size: 14px;
+    margin-bottom: 12px;
+    outline: none;
+    font-family: inherit;
+  }
+  .add-user-box input:focus,
+  .add-user-box select:focus { border-color: #4caf50; }
+
+  .add-user-error {
+    color: #e74c3c;
+    font-size: 12px;
+    text-align: center;
+    margin-bottom: 12px;
+    min-height: 16px;
+    font-weight: bold;
+  }
+
+  .add-user-buttons { display: flex; gap: 10px; }
+
+  .add-user-cancel,
+  .add-user-create {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .add-user-cancel { background: #607d8b; color: #fff; }
+  .add-user-create { background: #4caf50; color: #fff; }
+  .add-user-create:disabled { background: #555; cursor: wait; }
 </style>
 </head>
 <body>
 
+<!-- ═══════════ ЭКРАН ВХОДА ═══════════ -->
 <div class="login-screen" id="loginScreen">
   <h1>👆 Кликер</h1>
   <p class="sub">Вход по логину и паролю</p>
+
   <div class="login-form">
     <label for="loginUser">Логин</label>
     <input type="text" id="loginUser" autocomplete="off" placeholder="Введите логин">
+
     <label for="loginPass">Пароль</label>
     <input type="password" id="loginPass" autocomplete="off" placeholder="Введите пароль">
+
     <button class="login-btn" id="loginBtn">Войти</button>
     <div class="login-error" id="loginError"></div>
   </div>
+
+  <div class="login-contact">
+    <p>Нет аккаунта или забыл пароль?</p>
+
+    <a href="https://t.me/feda_krot" target="_blank" class="tg-link">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/>
+      </svg>
+      @feda_krot
+    </a>
+
+    <p class="tg-hint">
+      Напишите сюда, чтобы <b>получить аккаунт</b> или <b>сменить пароль</b>
+    </p>
+
+    <p class="tg-hint-2">
+      Нет Telegram? <b>Найди меня в реальной жизни</b> — договоримся лично.
+    </p>
+  </div>
 </div>
 
+<!-- ═══════════ ЭКРАН ИГРЫ ═══════════ -->
 <div class="game-screen" id="gameScreen">
   <div class="user-bar">
     <span>Вы вошли как <span class="user-name" id="currentUser"></span></span>
@@ -249,7 +586,10 @@
 
   <div class="panel admin" id="adminPanel">
     <div class="panel-title">👑 Панель админа</div>
-    <div class="panel-sub">Меняй монеты, силу клика и пароли</div>
+    <div class="panel-sub">Меняй логины, монеты, силу, пароли</div>
+
+    <button class="add-user-btn" id="addUserBtn">+ Добавить игрока</button>
+
     <div class="player-list" id="adminList"></div>
     <button class="panel-refresh" id="adminRefresh">🔄 Обновить</button>
   </div>
@@ -261,6 +601,34 @@
     <button class="panel-refresh" id="helperRefresh">🔄 Обновить</button>
   </div>
 </div>
+
+<!-- ═══════════ МОДАЛЬНОЕ ОКНО: ДОБАВИТЬ ИГРОКА ═══════════ -->
+<div class="add-user-modal" id="addUserModal">
+  <div class="add-user-box">
+    <div class="add-user-title">Новый игрок</div>
+
+    <label>Логин</label>
+    <input type="text" id="newUserLogin" placeholder="например: kolya" autocomplete="off">
+
+    <label>Пароль</label>
+    <input type="text" id="newUserPass" placeholder="например: kolya123" autocomplete="off">
+
+    <label>Роль</label>
+    <select id="newUserRole">
+      <option value="player">Игрок</option>
+      <option value="helper">Хелпер</option>
+      <option value="admin">Админ</option>
+    </select>
+
+    <div class="add-user-error" id="addUserError"></div>
+
+    <div class="add-user-buttons">
+      <button class="add-user-cancel" id="addUserCancel">Отмена</button>
+      <button class="add-user-create" id="addUserCreate">Создать</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function() {
   'use strict';
@@ -380,6 +748,9 @@
       topBlock.classList.add('visible');
       loadTop();
     }
+
+    loginUser.value = '';
+    loginPass.value = '';
   }
 
   function logout() {
@@ -484,6 +855,16 @@
       var edit = document.createElement('div');
       edit.className = 'player-edit';
 
+      // Логин
+      var gLogin = document.createElement('div');
+      gLogin.className = 'edit-group';
+      gLogin.innerHTML = '<label>Логин</label>';
+      var inLogin = document.createElement('input');
+      inLogin.type = 'text';
+      inLogin.placeholder = p.login;
+      inLogin.value = '';
+      gLogin.appendChild(inLogin);
+
       // Монеты
       var g1 = document.createElement('div');
       g1.className = 'edit-group';
@@ -492,7 +873,7 @@
       inS.type = 'number'; inS.min = '0'; inS.value = p.coins;
       g1.appendChild(inS);
 
-      // Сила клика
+      // Сила
       var g2 = document.createElement('div');
       g2.className = 'edit-group';
       g2.innerHTML = '<label>Сила</label>';
@@ -500,13 +881,13 @@
       inP.type = 'number'; inP.min = '1'; inP.value = p.clickPower;
       g2.appendChild(inP);
 
-      // НОВОЕ: Пароль
+      // Пароль
       var g3 = document.createElement('div');
       g3.className = 'edit-group';
       g3.innerHTML = '<label>Пароль</label>';
       var inPass = document.createElement('input');
       inPass.type = 'text';
-      inPass.placeholder = 'новый пароль';
+      inPass.placeholder = 'новый';
       inPass.value = '';
       g3.appendChild(inPass);
 
@@ -518,14 +899,39 @@
         var ns = parseInt(inS.value, 10);
         var np = parseInt(inP.value, 10);
         var newPass = inPass.value.trim();
+        var newLogin = inLogin.value.trim();
 
         if (isNaN(ns) || ns < 0) ns = 0;
         if (isNaN(np) || np < 1) np = 1;
 
-        // 1. Сохраняем монеты и силу
-        api('POST', '/api/set', { login: p.login, coins: ns, clickPower: np })
+        var promise = Promise.resolve();
+
+        // Если введён новый логин — сначала меняем
+        if (newLogin.length > 0 && newLogin !== p.login) {
+          promise = api('POST', '/api/set-login', {
+            oldLogin: p.login,
+            newLogin: newLogin
+          }).then(function(res) {
+            if (!res.ok) {
+              alert(res.data.error || 'Ошибка смены логина');
+              throw new Error('stop');
+            }
+            if (res.data.selfChange) {
+              alert('Вы сменили свой логин!\nВойдите заново.');
+              location.reload();
+              throw new Error('self');
+            }
+            // Обновить локальный логин, чтобы следующие запросы шли правильно
+            p.login = res.data.newLogin;
+            return res;
+          });
+        }
+
+        promise
           .then(function() {
-            // 2. Если введён пароль — меняем его
+            return api('POST', '/api/set', { login: p.login, coins: ns, clickPower: np });
+          })
+          .then(function() {
             if (newPass.length > 0) {
               return api('POST', '/api/set-password', {
                 login: p.login,
@@ -539,11 +945,18 @@
               clickPower = np;
               updateScoreUI();
             }
+            inLogin.value = '';
             inPass.value = '';
             loadAdminPanel();
+          })
+          .catch(function(err) {
+            if (err.message !== 'stop' && err.message !== 'self') {
+              console.error(err);
+            }
           });
       });
 
+      edit.appendChild(gLogin);
       edit.appendChild(g1);
       edit.appendChild(g2);
       edit.appendChild(g3);
@@ -574,6 +987,80 @@
     });
   }
 
+  // ═══════════════════════════════════════════════════════
+  // ДОБАВЛЕНИЕ ИГРОКА
+  // ═══════════════════════════════════════════════════════
+  var addUserBtn = document.getElementById('addUserBtn');
+  var addUserModal = document.getElementById('addUserModal');
+  var addUserCancel = document.getElementById('addUserCancel');
+  var addUserCreate = document.getElementById('addUserCreate');
+  var newUserLogin = document.getElementById('newUserLogin');
+  var newUserPass = document.getElementById('newUserPass');
+  var newUserRole = document.getElementById('newUserRole');
+  var addUserError = document.getElementById('addUserError');
+
+  if (addUserBtn) {
+    addUserBtn.addEventListener('click', function() {
+      addUserModal.classList.add('visible');
+      newUserLogin.value = '';
+      newUserPass.value = '';
+      newUserRole.value = 'player';
+      addUserError.textContent = '';
+      setTimeout(function() { newUserLogin.focus(); }, 100);
+    });
+  }
+
+  if (addUserCancel) {
+    addUserCancel.addEventListener('click', function() {
+      addUserModal.classList.remove('visible');
+    });
+  }
+
+  if (addUserCreate) {
+    addUserCreate.addEventListener('click', function() {
+      var login = newUserLogin.value.trim();
+      var password = newUserPass.value;
+      var r = newUserRole.value;
+
+      addUserError.textContent = '';
+
+      if (!login) {
+        addUserError.textContent = 'Введите логин';
+        return;
+      }
+      if (!password) {
+        addUserError.textContent = 'Введите пароль';
+        return;
+      }
+
+      addUserCreate.disabled = true;
+      addUserError.textContent = 'Создание...';
+
+      api('POST', '/api/add-user', {
+        login: login,
+        password: password,
+        role: r
+      })
+        .then(function(res) {
+          addUserCreate.disabled = false;
+          if (!res.ok) {
+            addUserError.textContent = res.data.error || 'Ошибка';
+            return;
+          }
+          addUserError.textContent = '';
+          addUserModal.classList.remove('visible');
+          loadAdminPanel();
+        })
+        .catch(function() {
+          addUserCreate.disabled = false;
+          addUserError.textContent = 'Ошибка связи';
+        });
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // СОБЫТИЯ
+  // ═══════════════════════════════════════════════════════
   loginBtn.addEventListener('click', tryLogin);
   loginUser.addEventListener('keydown', function(e) { if (e.key === 'Enter') tryLogin(); });
   loginPass.addEventListener('keydown', function(e) { if (e.key === 'Enter') tryLogin(); });

@@ -201,7 +201,7 @@ app.get('/api/top', requireAuth, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════
-// ИЗМЕНЕНИЕ МОНЕТ И СИЛЫ КЛИКА (только админ)
+// ИЗМЕНЕНИЕ МОНЕТ И СИЛЫ КЛИКА
 // ═══════════════════════════════════════════════════════
 app.post('/api/set', requireAuth, requireAdmin, async (req, res) => {
   const { login, coins, clickPower } = req.body || {};
@@ -220,16 +220,15 @@ app.post('/api/set', requireAuth, requireAdmin, async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════
-// ИЗМЕНЕНИЕ ПАРОЛЯ (только админ)
+// ИЗМЕНЕНИЕ ПАРОЛЯ
 // ═══════════════════════════════════════════════════════
 app.post('/api/set-password', requireAuth, requireAdmin, async (req, res) => {
   const { login, newPassword } = req.body || {};
-
   if (!login || !newPassword) {
     return res.status(400).json({ error: 'Нужен логин и новый пароль' });
   }
-  if (newPassword.length < 3) {
-    return res.status(400).json({ error: 'Пароль слишком короткий (мин. 3 символа)' });
+  if (newPassword.length < 1) {
+    return res.status(400).json({ error: 'Пароль слишком короткий' });
   }
 
   const result = await pool.query(
@@ -243,6 +242,113 @@ app.post('/api/set-password', requireAuth, requireAdmin, async (req, res) => {
 
   console.log('Пароль изменён для: ' + login);
   res.json({ ok: true, login: login });
+});
+
+// ═══════════════════════════════════════════════════════
+// ИЗМЕНЕНИЕ ЛОГИНА
+// ═══════════════════════════════════════════════════════
+app.post('/api/set-login', requireAuth, requireAdmin, async (req, res) => {
+  const { oldLogin, newLogin } = req.body || {};
+
+  if (!oldLogin || !newLogin) {
+    return res.status(400).json({ error: 'Нужен старый и новый логин' });
+  }
+  if (newLogin.length < 1) {
+    return res.status(400).json({ error: 'Логин слишком короткий' });
+  }
+  if (newLogin.length > 50) {
+    return res.status(400).json({ error: 'Логин слишком длинный (макс. 50)' });
+  }
+
+  var allowed = /^[a-zA-Zа-яА-ЯёЁ0-9_\-]+$/;
+  if (!allowed.test(newLogin)) {
+    return res.status(400).json({ error: 'Логин: только буквы, цифры, - и _' });
+  }
+
+  const checkResult = await pool.query(
+    'SELECT login FROM users WHERE login = $1',
+    [newLogin]
+  );
+  if (checkResult.rows.length > 0) {
+    return res.status(400).json({ error: 'Такой логин уже занят' });
+  }
+
+  const oldResult = await pool.query(
+    'SELECT login FROM users WHERE login = $1',
+    [oldLogin]
+  );
+  if (oldResult.rows.length === 0) {
+    return res.status(400).json({ error: 'Игрок со старым логином не найден' });
+  }
+
+  await pool.query(
+    'UPDATE users SET login = $1 WHERE login = $2',
+    [newLogin, oldLogin]
+  );
+
+  var isSelfChange = (oldLogin === req.login);
+  if (isSelfChange) {
+    const token = req.cookies.token;
+    delete sessions[token];
+    res.clearCookie('token');
+  }
+
+  console.log('Логин изменён: ' + oldLogin + ' → ' + newLogin +
+              (isSelfChange ? ' (свой!)' : ''));
+
+  res.json({
+    ok: true,
+    oldLogin: oldLogin,
+    newLogin: newLogin,
+    selfChange: isSelfChange
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+// ДОБАВЛЕНИЕ НОВОГО ИГРОКА
+// ═══════════════════════════════════════════════════════
+app.post('/api/add-user', requireAuth, requireAdmin, async (req, res) => {
+  const { login, password, role } = req.body || {};
+
+  if (!login || login.length < 1) {
+    return res.status(400).json({ error: 'Логин не может быть пустым' });
+  }
+  if (login.length > 50) {
+    return res.status(400).json({ error: 'Логин слишком длинный (макс. 50)' });
+  }
+
+  var allowed = /^[a-zA-Zа-яА-ЯёЁ0-9_\-]+$/;
+  if (!allowed.test(login)) {
+    return res.status(400).json({ error: 'Логин: только буквы, цифры, - и _' });
+  }
+
+  if (!password || password.length < 1) {
+    return res.status(400).json({ error: 'Пароль не может быть пустым' });
+  }
+  if (password.length > 100) {
+    return res.status(400).json({ error: 'Пароль слишком длинный (макс. 100)' });
+  }
+
+  if (!role || ['admin', 'helper', 'player'].indexOf(role) === -1) {
+    return res.status(400).json({ error: 'Роль: admin, helper или player' });
+  }
+
+  const checkResult = await pool.query(
+    'SELECT login FROM users WHERE login = $1',
+    [login]
+  );
+  if (checkResult.rows.length > 0) {
+    return res.status(400).json({ error: 'Такой логин уже занят' });
+  }
+
+  await pool.query(
+    `INSERT INTO users (login, password, role, coins, click_power)
+     VALUES ($1, $2, $3, 0, 1)`,
+    [login, password, role]
+  );
+
+  console.log('Создан игрок: ' + login + ' (роль: ' + role + ')');
+  res.json({ ok: true, login: login, role: role });
 });
 
 // ═══════════════════════════════════════════════════════
