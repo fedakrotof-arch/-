@@ -28,7 +28,7 @@ async function initDb() {
   `);
 
   const players = [
-    ['Krotov',   'Dycuvgd',     'admin'],
+    ['Krotov',   '123456',     'admin'],
     ['helper',  'helper123', 'helper'],
     ['player1', 'qwerty',    'player'],
     ['player2', 'password',  'player'],
